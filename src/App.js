@@ -1,25 +1,52 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useEffect, useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import LoginPage from './components/LoginPage';
+import RegisterPage from './components/RegisterPage';
+import ProjectDashboard from './components/ProjectDashboard';
+import ProjectCreatePage from './components/ProjectCreatePage';
+import ProjectDetailsPage from './components/ProjectDetails';
+import ProjectUploadPage from './components/DocumentUpload';
+import ProjectMembersPage from './components/ProjectMembers';
+
+const PrivateRoute = ({ children }) => {
+  const navigate = useNavigate();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const accessToken = localStorage.getItem('access');
+    if (!accessToken) {
+      navigate('/login');
+    } else {
+      setIsAuthenticated(true);
+    }
+  }, [navigate]);
+
+  if (!isAuthenticated) {
+    return null; // или можно вернуть spinner, если нужно
+  }
+
+  return children;
+};
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+
+        {/* Обертываем защищенные маршруты в PrivateRoute */}
+        <Route path="/projects" element={<PrivateRoute><ProjectDashboard /></PrivateRoute>} />
+        <Route path="/projects/create" element={<PrivateRoute><ProjectCreatePage /></PrivateRoute>} />
+        <Route path="/projects/:id" element={<PrivateRoute><ProjectDetailsPage /></PrivateRoute>} />
+        <Route path="/projects/:id/upload" element={<PrivateRoute><ProjectUploadPage /></PrivateRoute>} />
+        <Route path="/projects/:id/members" element={<PrivateRoute><ProjectMembersPage /></PrivateRoute>} />
+      </Routes>
+    </Router>
   );
 }
 
 export default App;
+
+
+
