@@ -1,24 +1,26 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import '../styles/project-members.css';
-import { authFetch } from '../utils/authFetch'; // Импортируем authFetch
+import { authFetch } from '../utils/authFetch';
 
 function ProjectMembers() {
-  const { id } = useParams(); // project id
+  const { id } = useParams();
   const [members, setMembers] = useState([]);
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState('');
   const [messages, setMessages] = useState([]);
-  const [loading, setLoading] = useState(true);       // loading state
-  const [error, setError] = useState(null);           // error state
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [ownerId, setOwnerId] = useState(null);
 
   useEffect(() => {
-    // Используем authFetch для получения данных о членах проекта
     const fetchMembers = async () => {
       try {
-        const response = await authFetch(`/api/projects/${id}/members/`);
+        const response = await authFetch(`/api/projects/${id}/members/`, {
+          method: 'GET',
+        });
 
         if (response.status === 401) {
-          // Unauthorized - redirect to login
           window.location.href = '/login';
           return;
         }
@@ -28,12 +30,14 @@ function ProjectMembers() {
         }
 
         const data = await response.json();
-        setMembers(data.members || []);
+        setMembers(data.members);
+        setCurrentUserId(data.current_user_id);
+        setOwnerId(data.owner_id);
       } catch (err) {
         console.error('Error fetching members:', err);
         setError('Something went wrong. Please try again later.');
       } finally {
-        setLoading(false); // заканчиваем загрузку
+        setLoading(false);
       }
     };
 
@@ -42,8 +46,8 @@ function ProjectMembers() {
 
   const handleInvite = async (e) => {
     e.preventDefault();
-    setLoading(true); // начинаем загрузку
-    setError(null); // очищаем ошибку
+    setLoading(true);
+    setError(null);
 
     try {
       const response = await authFetch(`/api/projects/${id}/members/invite/`, {
@@ -51,17 +55,37 @@ function ProjectMembers() {
         body: JSON.stringify({ email }),
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        setMessages([{ text: `Invite sent to ${email}`, type: 'success' }]);
-        setEmail("");
+        setMessages([{ text: data.detail || `Invite sent to ${email}`, type: 'success' }]);
+        setEmail('');
       } else {
-        setMessages([{ text: `Failed to send invite`, type: 'error' }]);
+        setMessages([{ text: data.detail || 'Failed to send invite', type: 'error' }]);
       }
     } catch (err) {
       console.error('Error inviting member:', err);
       setError('Something went wrong. Please try again later.');
     } finally {
-      setLoading(false); // заканчиваем загрузку
+      setLoading(false);
+    }
+  };
+
+  const removeMember = async (memberId) => {
+    try {
+      const response = await authFetch(`/api/projects/${id}/members/${memberId}/`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setMembers(members.filter(m => m.membership_id !== memberId));
+      } else {
+        const data = await response.json();
+        setMessages([{ text: data.detail || 'Failed to remove member', type: 'error' }]);
+      }
+    } catch (err) {
+      console.error('Error removing member:', err);
+      setError('Something went wrong. Please try again later.');
     }
   };
 
@@ -69,8 +93,8 @@ function ProjectMembers() {
     <div className="dashboard">
       <h1 className="dashboard__title">Project Members</h1>
 
-      {loading && <p>Loading...</p>} {/* показываем индикатор загрузки */}
-      {error && <p className="dashboard__error">{error}</p>} {/* отображаем ошибку */}
+      {loading && <p>Loading...</p>}
+      {error && <p className="dashboard__error">{error}</p>}
 
       {messages.length > 0 && (
         <ul className="messages">
@@ -82,30 +106,45 @@ function ProjectMembers() {
 
       <div className="member-list">
         {members.length > 0 ? (
-          members.map(m => (
-            <div className="member" key={m.id}>
-              <span className="member__name">{m.username}</span>
-              <button className="member__remove">🗑️</button>
-            </div>
-          ))
-        ) : <p>No members yet.</p>}
+          members.map(m => {
+            const isSelf = m.id === currentUserId;
+            const isOwner = m.id === ownerId;
+            const currentUserIsOwner = currentUserId === ownerId;
+
+            return (
+              <div className="member" key={m.id}>
+                <span className="member__name">
+                  {m.username} {isOwner && <span title="Owner">👑</span>}
+                </span>
+
+                {(!isOwner && (isSelf || currentUserIsOwner)) && (
+                  <button className="member__remove" onClick={() => removeMember(m.membership_id)}>
+                    🗑️
+                  </button>
+                )}
+              </div>
+            );
+          })
+        ) : (
+          <p>No members yet.</p>
+        )}
       </div>
 
-      <form onSubmit={handleInvite} className="invite-form">
-        <input
-          type="email"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          className="invite-form__input"
-          placeholder="Enter email to invite"
-          required
-        />
-        <button type="submit" className="invite-form__button">Invite</button>
-      </form>
+      {currentUserId === ownerId && (
+          <form onSubmit={handleInvite} className="invite-form">
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              className="invite-form__input"
+              placeholder="Enter email to invite"
+              required
+            />
+            <button type="submit" className="invite-form__button">Invite</button>
+          </form>
+        )}
     </div>
   );
 }
 
 export default ProjectMembers;
-
-

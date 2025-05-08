@@ -12,22 +12,16 @@ const RegisterPage = () => {
 
   const handleSubmit = async e => {
     e.preventDefault();
-    try {
-      const response = await fetch('http://127.0.0.1:8000/api/auth/register/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-  
-      if (response.ok) {
-        navigate('/login');
-      } else {
-        const errorData = await response.json();
-        alert(`Registration failed: ${errorData.detail || 'Unknown error'}`);
-      }
-    } catch (error) {
-      console.error('Error during registration:', error);
-      alert('An error occurred. Please try again.');
+    const response = await fetch('http://127.0.0.1:8000/api/auth/register/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form),
+    });
+
+    if (response.ok) {
+      navigate('/login');
+    } else {
+      alert('Registration failed');
     }
   };
 

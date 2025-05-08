@@ -4,17 +4,22 @@ export const authFetch = async (url, options = {}) => {
   const access = localStorage.getItem('access');
   const refresh = localStorage.getItem('refresh');
 
+  const isFormData = options.body instanceof FormData;
+
   const headers = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     Authorization: `Bearer ${access}`,
     ...options.headers,
   };
 
-  let response = await fetch(BASE_URL + url, {
+  const fullUrl = url.startsWith('http') ? url : BASE_URL + url;
+
+  let response = await fetch(fullUrl, {
     ...options,
     headers,
   });
 
+  // Обновление access токена по refresh при 401
   if (response.status === 401 && refresh) {
     const refreshResponse = await fetch(BASE_URL + '/api/auth/refresh/', {
       method: 'POST',
@@ -26,13 +31,13 @@ export const authFetch = async (url, options = {}) => {
       const data = await refreshResponse.json();
       localStorage.setItem('access', data.access);
 
-      // Повтор запроса с новым access токеном
       const retryHeaders = {
-        ...headers,
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
         Authorization: `Bearer ${data.access}`,
+        ...options.headers,
       };
 
-      response = await fetch(BASE_URL + url, {
+      response = await fetch(fullUrl, {
         ...options,
         headers: retryHeaders,
       });
@@ -45,5 +50,4 @@ export const authFetch = async (url, options = {}) => {
 
   return response;
 };
-
 

@@ -21,10 +21,6 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-<<<<<<< HEAD
-
-.idea
-=======
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
@@ -48,5 +44,3 @@ yarn-error.log*
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
->>>>>>> 34ae416534751930370c8ff0bfd6669984d6fbf7
-.idea

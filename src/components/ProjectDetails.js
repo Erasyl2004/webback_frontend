@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import '../styles/project-details.css';
-import { authFetch } from '../utils/authFetch'; // Импортируем authFetch
+import { authFetch } from '../utils/authFetch';
 
 function ProjectDetails() {
-  const { id } = useParams(); // project ID из URL
+  const { id } = useParams();
   const [project, setProject] = useState(null);
   const [documents, setDocuments] = useState([]);
   const [members, setMembers] = useState([]);
@@ -12,10 +12,8 @@ function ProjectDetails() {
   const [newComment, setNewComment] = useState("");
 
   useEffect(() => {
-    // Используем authFetch для получения данных
     const fetchProjectDetails = async () => {
-      // Исправлена строка, теперь id правильно вставляется в URL
-      const response = await authFetch(`/api/projects/${id}/`);  // Используем шаблонные строки
+      const response = await authFetch(`/api/projects/${id}/`);
       if (response.ok) {
         const data = await response.json();
         setProject(data);
@@ -32,7 +30,6 @@ function ProjectDetails() {
     e.preventDefault();
     if (newComment.trim() === "") return;
 
-    // Отправка комментария
     const comment = {
       user: { username: "Текущий пользователь" },
       text: newComment,
@@ -41,6 +38,44 @@ function ProjectDetails() {
 
     setComments(prev => [comment, ...prev]);
     setNewComment("");
+  };
+
+  const handleDownload = async (docId, docName) => {
+    try {
+      const response = await authFetch(`/api/documents/${docId}/download/`);
+      if (!response.ok) throw new Error("Ошибка при скачивании");
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = docName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      alert("Не удалось скачать файл");
+      console.error(error);
+    }
+  };
+
+  const handleDelete = async (docId) => {
+    if (!window.confirm("Удалить документ?")) return;
+
+    try {
+      const response = await authFetch(`/api/documents/${docId}/`, {
+        method: 'DELETE'
+      });
+      if (response.ok) {
+        setDocuments(prev => prev.filter(doc => doc.id !== docId));
+      } else {
+        throw new Error("Ошибка при удалении");
+      }
+    } catch (error) {
+      alert("Не удалось удалить файл");
+      console.error(error);
+    }
   };
 
   if (!project) return <div>Loading...</div>;
@@ -58,8 +93,18 @@ function ProjectDetails() {
                 <div className="document-card__path">{doc.file}</div>
               </div>
               <div className="document-card__actions">
-                <a href={doc.file} className="document-card__download">⬇️</a>
-                <button className="document-card__delete">🗑️</button>
+                <button
+                  onClick={() => handleDownload(doc.id, doc.name)}
+                  className="document-card__download"
+                >
+                  ⬇️
+                </button>
+                <button
+                  onClick={() => handleDelete(doc.id)}
+                  className="document-card__delete"
+                >
+                  🗑️
+                </button>
               </div>
             </div>
           ))
@@ -111,4 +156,3 @@ function ProjectDetails() {
 }
 
 export default ProjectDetails;
-
