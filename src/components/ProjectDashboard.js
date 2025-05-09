@@ -5,17 +5,34 @@ import '../styles/projects.css';
 
 const ProjectDashboard = () => {
   const [projects, setProjects] = useState([]);
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Проверка наличия access токена в localStorage
     const accessToken = localStorage.getItem('access');
     if (!accessToken) {
-      navigate('/login'); // Перенаправляем на страницу логина, если токен отсутствует
+      navigate('/login');
       return;
     }
+
+    const fetchUser = async () => {
+      try {
+        const response = await authFetch('/api/auth/current_user/');
+        if (response.status === 401) {
+          navigate('/login');
+          return;
+        }
+        if (!response.ok) {
+          throw new Error('Failed to fetch user');
+        }
+        const data = await response.json();
+        setUser(data);
+      } catch (err) {
+        console.error('Error fetching user:', err);
+      }
+    };
 
     const fetchProjects = async () => {
       try {
@@ -37,6 +54,7 @@ const ProjectDashboard = () => {
       }
     };
 
+    fetchUser();
     fetchProjects();
   }, [navigate]);
 
@@ -51,7 +69,9 @@ const ProjectDashboard = () => {
       <div className="dashboard__header">
         <div className="dashboard__profile">
           <span className="dashboard__icon">👤</span>
-          <span className="dashboard__label">You</span>
+          <span className="dashboard__label">
+            {user ? user.username : 'You'}
+          </span>
         </div>
         <button className="dashboard__logout" onClick={handleLogout}>Logout</button>
       </div>
@@ -82,6 +102,3 @@ const ProjectDashboard = () => {
 };
 
 export default ProjectDashboard;
-
-
-

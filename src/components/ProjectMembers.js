@@ -78,7 +78,7 @@ function ProjectMembers() {
       });
 
       if (response.ok) {
-        setMembers(members.filter(m => m.membership_id !== memberId));
+        setMembers(members.filter(m => m.id !== memberId));
       } else {
         const data = await response.json();
         setMessages([{ text: data.detail || 'Failed to remove member', type: 'error' }]);
@@ -118,7 +118,7 @@ function ProjectMembers() {
                 </span>
 
                 {(!isOwner && (isSelf || currentUserIsOwner)) && (
-                  <button className="member__remove" onClick={() => removeMember(m.membership_id)}>
+                  <button className="member__remove" onClick={() => removeMember(m.id)}>
                     🗑️
                   </button>
                 )}

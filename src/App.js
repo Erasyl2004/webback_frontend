@@ -7,6 +7,7 @@ import ProjectCreatePage from './components/ProjectCreatePage';
 import ProjectDetailsPage from './components/ProjectDetails';
 import ProjectUploadPage from './components/DocumentUpload';
 import ProjectMembersPage from './components/ProjectMembers';
+import { Navigate } from 'react-router-dom';
 
 const PrivateRoute = ({ children }) => {
   const navigate = useNavigate();
@@ -32,10 +33,11 @@ function App() {
   return (
     <Router>
       <Routes>
+        <Route path="/" element={
+          localStorage.getItem('access') ? <Navigate to="/projects" /> : <Navigate to="/login" />
+        } />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-
-        {/* Обертываем защищенные маршруты в PrivateRoute */}
         <Route path="/projects" element={<PrivateRoute><ProjectDashboard /></PrivateRoute>} />
         <Route path="/projects/create" element={<PrivateRoute><ProjectCreatePage /></PrivateRoute>} />
         <Route path="/projects/:id" element={<PrivateRoute><ProjectDetailsPage /></PrivateRoute>} />
